@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UVM - Sistema DYGS - Evaluación Docente</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <header>
+    <h1>UVM - Sistema DYGS - Evaluación Docente</h1>
+    <nav id="nav-menu" style="display: none;">
+      <button id="btn-nav-alumno" onclick="showScreen('screen-alumno')">Módulo Alumno</button>
+      <button id="btn-nav-coord" onclick="showScreen('screen-coordinacion')">Coordinación</button>
+      <button id="btn-nav-ind" onclick="showScreen('screen-indicadores')">Indicadores</button>
+      <button onclick="logout()">Cerrar Sesión</button>
+    </nav>
+  </header>
+
+  <div class="container">
+
+    <!-- PANTALLA 1: LOGIN -->
+    <div id="screen-login" class="screen active">
+      <div class="card login-form">
+        <h2>Inicio de Sesión</h2>
+        <form onsubmit="event.preventDefault(); login();">
+          <div class="form-group">
+            <label>Número de Cuenta / Correo</label>
+            <input type="text" id="userInput" placeholder="Ej. 12345678" required>
+          </div>
+          <div class="form-group">
+            <label>Contraseña</label>
+            <input type="password" id="passInput" placeholder="******" required>
+          </div>
+          <div class="form-group">
+            <label>Perfil</label>
+            <select id="roleSelect">
+              <option value="alumno">Alumno</option>
+              <option value="coordinador">Coordinador Académico</option>
+              <option value="docente">Docente</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </div>
+          <button type="submit" class="btn">Ingresar</button>
+          
+          <div class="links-container">
+            <a onclick="showScreen('screen-registro')">Registrar Cuenta</a>
+            <a onclick="showScreen('screen-cambiar-pass')">Cambiar Contraseña</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- PANTALLA: REGISTRO DE CUENTA -->
+    <div id="screen-registro" class="screen">
+      <div class="card login-form">
+        <h2>Registro de Usuario</h2>
+        <form onsubmit="event.preventDefault(); registrarUsuario();">
+          <div class="form-group">
+            <label>Número de Cuenta / Correo</label>
+            <input type="text" id="regUser" placeholder="Ej. 12345678" required>
+          </div>
+          <div class="form-group">
+            <label>Contraseña</label>
+            <input type="password" id="regPass" placeholder="******" required>
+          </div>
+          <div class="form-group">
+            <label>Perfil</label>
+            <select id="regRole">
+              <option value="alumno">Alumno</option>
+              <option value="coordinador">Coordinador Académico</option>
+              <option value="docente">Docente</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </div>
+          <button type="submit" class="btn">Guardar Registro en MySQL</button>
+          <button type="button" class="btn btn-secondary" onclick="showScreen('screen-login')">Cancelar</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- PANTALLA: CAMBIAR CONTRASEÑA -->
+    <div id="screen-cambiar-pass" class="screen">
+      <div class="card login-form">
+        <h2>Cambiar Contraseña</h2>
+        <form onsubmit="event.preventDefault(); cambiarPass();">
+          <div class="form-group">
+            <label>Número de Cuenta / Correo</label>
+            <input type="text" id="changeUser" placeholder="Ej. 12345678" required>
+          </div>
+          <div class="form-group">
+            <label>Contraseña Actual</label>
+            <input type="password" id="changePassOld" placeholder="******" required>
+          </div>
+          <div class="form-group">
+            <label>Nueva Contraseña</label>
+            <input type="password" id="changePassNew" placeholder="******" required>
+          </div>
+          <button type="submit" class="btn">Actualizar Contraseña</button>
+          <button type="button" class="btn btn-secondary" onclick="showScreen('screen-login')">Volver al Login</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- PANTALLA 2: MÓDULO ALUMNO -->
+    <div id="screen-alumno" class="screen">
+      <div class="card">
+        <h2>Avance de Evaluaciones</h2>
+        <p><strong>Estatus:</strong> <span id="estatus-texto">Pendientes evaluaciones del ciclo lectivo actual.</span></p>
+        <br>
+        <div class="progress-bar">
+          <div id="progress-fill" class="progress-fill" style="width: 50%;">50% Completado</div>
+        </div>
+      </div>
+
+      <div class="card">
+          <h2>Docentes a Evaluar</h2>
+
+          <table>
+              <thead>
+                  <tr>
+                      <th>Materia</th>
+                      <th>Docente</th>
+                      <th>Estatus</th>
+                      <th>Acción</th>
+                  </tr>
+              </thead>
+
+              <tbody id="tabla-docentes-body">
+              </tbody>
+
+          </table>
+      </div>
+
+      <!-- Cuestionario de Evaluación -->
+      <div id="eval-form-card" class="card" style="display: none;">
+        <h2 id="eval-title">Cuestionario de Evaluación Docente</h2>
+        <p style="margin-bottom: 15px; color: #666;">Selecciona el valor correspondiente a cada aspecto (0: Muy Deficiente - 10: Excelente).</p>
+        
+        <form id="form-evaluacion" onsubmit="event.preventDefault(); submitEvaluation();">
+          <div class="question-item">
+            <p>1. Dominio de la materia</p>
+            <div class="options-group">
+              <label><input type="radio" name="q1" value="0" required> 0</label>
+              <label><input type="radio" name="q1" value="2.5"> 2.5</label>
+              <label><input type="radio" name="q1" value="5.0"> 5.0</label>
+              <label><input type="radio" name="q1" value="7.5"> 7.5</label>
+              <label><input type="radio" name="q1" value="10"> 10</label>
+            </div>
+          </div>
+
+          <div class="question-item">
+            <p>2. Planeación de clases</p>
+            <div class="options-group">
+              <label><input type="radio" name="q2" value="0" required> 0</label>
+              <label><input type="radio" name="q2" value="2.5"> 2.5</label>
+              <label><input type="radio" name="q2" value="5.0"> 5.0</label>
+              <label><input type="radio" name="q2" value="7.5"> 7.5</label>
+              <label><input type="radio" name="q2" value="10"> 10</label>
+            </div>
+          </div>
+
+          <div class="question-item">
+            <p>3. Claridad en las explicaciones</p>
+            <div class="options-group">
+              <label><input type="radio" name="q3" value="0" required> 0</label>
+              <label><input type="radio" name="q3" value="2.5"> 2.5</label>
+              <label><input type="radio" name="q3" value="5.0"> 5.0</label>
+              <label><input type="radio" name="q3" value="7.5"> 7.5</label>
+              <label><input type="radio" name="q3" value="10"> 10</label>
+            </div>
+          </div>
+
+          <div class="question-item">
+            <p>4. Fomento de la participación</p>
+            <div class="options-group">
+              <label><input type="radio" name="q4" value="0" required> 0</label>
+              <label><input type="radio" name="q4" value="2.5"> 2.5</label>
+              <label><input type="radio" name="q4" value="5.0"> 5.0</label>
+              <label><input type="radio" name="q4" value="7.5"> 7.5</label>
+              <label><input type="radio" name="q4" value="10"> 10</label>
+            </div>
+          </div>
+
+          <div class="question-item">
+            <p>5. Uso de recursos didácticos</p>
+            <div class="options-group">
+              <label><input type="radio" name="q5" value="0" required> 0</label>
+              <label><input type="radio" name="q5" value="2.5"> 2.5</label>
+              <label><input type="radio" name="q5" value="5.0"> 5.0</label>
+              <label><input type="radio" name="q5" value="7.5"> 7.5</label>
+              <label><input type="radio" name="q5" value="10"> 10</label>
+            </div>
+          </div>
+
+          <button type="submit" class="btn">Enviar Evaluación a MySQL</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- PANTALLA 3: DASHBOARD COORDINACIÓN -->
+    <div id="screen-coordinacion" class="screen">
+      <!-- Tarjeta NUEVA con el área y la tabla filtrada de docentes -->
+      <div class="card">
+        <h2 id="titulo-coordinacion">Panel de Coordinación Académica</h2>
+        <p id="subtitulo-area" style="margin-bottom: 15px; color: #555; font-weight: bold;">Cargando área académica...</p>
+        
+        <table>
+          <thead>
+            <tr>
+              <th>Docente</th>
+              <th>Materia</th>
+              <th>Calificación Promedio</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-coordinador-body">
+            <tr>
+              <td colspan="3">Cargando profesores del área...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Dashboard de Seguimiento de Evaluaciones</h2>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+          <select id="filterCarrera" onchange="updateDashboardMetrics()" style="padding: 5px;">
+            <option value="todas">Todas las Carreras</option>
+            <option value="ingenieria">Ingeniería</option>
+            <option value="administracion">Administración</option>
+          </select>
+          <select id="filterGrupo" onchange="updateDashboardMetrics()" style="padding: 5px;">
+            <option value="todos">Todos los Grupos</option>
+            <option value="grupoA">Grupo A</option>
+            <option value="grupoB">Grupo B</option>
+          </select>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Indicador</th>
+              <th>Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Total Alumnos</td>
+              <td id="dash-tot-alumnos">500</td>
+            </tr>
+            <tr>
+              <td>Evaluaciones Esperadas</td>
+              <td id="dash-eval-esp">2,500</td>
+            </tr>
+            <tr>
+              <td>Evaluaciones Realizadas</td>
+              <td id="dash-eval-real">2,100</td>
+            </tr>
+            <tr>
+              <td>Evaluaciones Pendientes</td>
+              <td id="dash-eval-pen">400</td>
+            </tr>
+            <tr>
+              <td><strong>Porcentaje de Avance Global</strong></td>
+              <td><strong id="dash-porcentaje">84%</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PANTALLA 4: INDICADORES DOCENTES -->
+    <div id="screen-indicadores" class="screen">
+      <div class="card">
+        <h2>Indicadores y Ranking Docente</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Docente</th>
+              <th>Promedio</th>
+              <th>Categoría</th>
+              <th>Estatus</th>
+              <th>Materias Asignadas</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Dr. Samuel</td>
+              <td>9.5</td>
+              <td>Excelente</td>
+              <td><span class="badge badge-success">Altamente Recomendado</span></td>
+              <td>4 materias</td>
+            </tr>
+            <tr>
+              <td>Ing. Adrian Sanroman</td>
+              <td>8.4</td>
+              <td>Bueno</td>
+              <td><span class="badge badge-success">Recomendado</span></td>
+              <td>3 materias</td>
+            </tr>
+            <tr>
+              <td>Mtro. Luis Velázquez</td>
+              <td>6.2</td>
+              <td>No Suficiente</td>
+              <td><span class="badge badge-danger">No Contratable</span></td>
+              <td>0 materias</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
